@@ -1,5 +1,6 @@
 import { REST, Routes, SlashCommandBuilder } from "discord.js";
 import "dotenv/config";
+import { DEV_COMMAND_POSTFIX } from "./config.js";
 
 if (!process.env["BOT_ID"]) throw new Error("You must provide a BOT_ID env variable");
 
@@ -11,7 +12,7 @@ if (idx !== -1 && idx < process.argv.length - 1) {
     guildId = process.argv[idx + 1];
 }
 
-const commands = [
+let commands = [
     new SlashCommandBuilder()
         .setName("pat")
         .setDescription("Pats a user")
@@ -71,7 +72,15 @@ const commands = [
         ),
 ].map((command) => command.toJSON());
 
-const rest = new REST({ version: "10" }).setToken(process.env["BOT_TOKEN"] ?? "");
+if (guildId) {
+    commands = commands.map((command) => {
+        command.name = `${command.name}${DEV_COMMAND_POSTFIX}`;
+        command.description = `${command.description} (dev)`;
+        return command;
+    });
+}
+
+const rest = new REST({ version: "10" }).setToken(process.env.BOT_TOKEN);
 
 try {
     if (guildId) {
