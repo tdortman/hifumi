@@ -25,7 +25,7 @@ export const IMAGE_THREAD_CHANNELS = [
     "1164282153396351097",
     "1164282173403185262",
 ] as const;
-export const USER_AGENT = `${BOT_NAME}:v1.0.0:tiltedtoast27@gmail.com`;
+export const USER_AGENT = `${BOT_NAME}:v1.0.0:${BOT_NAME}@tdortman.com`;
 
 // biome-ignore format: this is nicer
 const envVariables = z.object({
