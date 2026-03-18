@@ -759,7 +759,6 @@ export async function urban(
     setEmbedArr({
         result: result.list,
         user,
-        sortKey: "thumbs_up",
         embedArray: urbanEmbeds[identifier],
         buildEmbedFunc: buildUrbanEmbed,
     });
