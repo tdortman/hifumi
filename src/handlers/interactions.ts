@@ -18,6 +18,12 @@ import {
     urban,
     urbanEmbeds,
 } from "../commands/miscellaneous.ts";
+import {
+    nixpkgsAdd,
+    nixpkgsEdit,
+    nixpkgsList,
+    nixpkgsRemove,
+} from "../commands/nixpkgs.ts";
 import { sub } from "../commands/reddit.ts";
 import {
     BOT_OWNERS,
@@ -119,23 +125,39 @@ const commands = new Map<ChatInputCommandName, ChatInputCommandFn>([
     [".leet", leet],
     [".beautiful", beautiful],
     [".prefix", updatePrefix],
+    ["nixpkgs::add", nixpkgsAdd],
+    ["nixpkgs::remove", nixpkgsRemove],
+    ["nixpkgs::edit", nixpkgsEdit],
+    ["nixpkgs::list", nixpkgsList],
 ]);
 
 const devCommands = new Map<ChatInputCommandName, ChatInputCommandFn>();
-for (const [cmd, fn] of commands) devCommands.set(`${cmd}-dev`, fn);
+for (const [cmd, fn] of commands) {
+    if (cmd.startsWith(".")) {
+        devCommands.set(`${cmd}-dev`, fn);
+        continue;
+    }
+
+    const [name, subcommand] = cmd.split("::");
+    if (!name || !subcommand) continue;
+    devCommands.set(`${name}-dev::${subcommand}`, fn);
+}
 
 async function handleCommandInteraction(
     interaction: ChatInputCommandInteraction,
     subcommand: string | null
 ) {
     const commandsToCheck = isDev() ? devCommands : commands;
-    for (const [cmd, fn] of commandsToCheck) {
-        if (
-            cmd.includes(`${interaction.commandName}::${subcommand ?? ""}`) ||
-            cmd.includes(`.${interaction.commandName}`)
-        ) {
-            return await fn(interaction);
-        }
+
+    const subcommandKey = `${interaction.commandName}::${subcommand ?? ""}`;
+    const simpleCommandKey = `.${interaction.commandName}`;
+
+    const handler =
+        commandsToCheck.get(subcommandKey as ChatInputCommandName) ??
+        commandsToCheck.get(simpleCommandKey as ChatInputCommandName);
+
+    if (handler) {
+        return await handler(interaction);
     }
 }
 

@@ -1,9 +1,13 @@
 import { createClient } from "@libsql/client";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { prefixes, redditPosts } from "./schema.ts";
-import type { NewRedditPost, RedditPost } from "./types.ts";
+import { nixpkgsPrSubscriptions, prefixes, redditPosts } from "./schema.ts";
+import type {
+    NewNixpkgsPrSubscription,
+    NewRedditPost,
+    RedditPost,
+} from "./types.ts";
 
 const { TURSO_AUTH_TOKEN, TURSO_DATABASE_URL, DEV_MODE } = process.env;
 
@@ -81,4 +85,64 @@ export async function migrateDb() {
         console.error(e);
         process.exit(1);
     });
+}
+
+export async function addPrSubscription(sub: NewNixpkgsPrSubscription) {
+    return await db.insert(nixpkgsPrSubscriptions).values(sub);
+}
+
+export async function removePrSubscription(
+    userId: string,
+    prNumber: number,
+    branch: string
+) {
+    return await db
+        .delete(nixpkgsPrSubscriptions)
+        .where(
+            and(
+                eq(nixpkgsPrSubscriptions.userId, userId),
+                eq(nixpkgsPrSubscriptions.prNumber, prNumber),
+                eq(nixpkgsPrSubscriptions.branch, branch)
+            )
+        );
+}
+
+export async function updatePrSubscriptionBranch(
+    userId: string,
+    prNumber: number,
+    newBranch: string
+) {
+    return await db
+        .update(nixpkgsPrSubscriptions)
+        .set({ branch: newBranch })
+        .where(
+            and(
+                eq(nixpkgsPrSubscriptions.userId, userId),
+                eq(nixpkgsPrSubscriptions.prNumber, prNumber)
+            )
+        );
+}
+
+export async function getUserPrSubscriptions(userId: string) {
+    return await db
+        .select()
+        .from(nixpkgsPrSubscriptions)
+        .where(eq(nixpkgsPrSubscriptions.userId, userId));
+}
+
+export async function getAllActivePrSubscriptions() {
+    return await db.select().from(nixpkgsPrSubscriptions);
+}
+
+export async function deletePrSubscriptionById(id: number) {
+    return await db
+        .delete(nixpkgsPrSubscriptions)
+        .where(eq(nixpkgsPrSubscriptions.id, id));
+}
+
+export async function updatePrSubscriptionSha(id: number, sha: string) {
+    return await db
+        .update(nixpkgsPrSubscriptions)
+        .set({ mergeCommitSha: sha })
+        .where(eq(nixpkgsPrSubscriptions.id, id));
 }

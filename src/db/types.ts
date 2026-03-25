@@ -13,8 +13,20 @@ export type Status = InferSelectModel<typeof schema.statuses>;
 export type NewStatus = InferInsertModel<typeof schema.statuses>;
 export type RedditPost = InferSelectModel<typeof schema.redditPosts>;
 export type NewRedditPost = InferInsertModel<typeof schema.redditPosts>;
+export type NixpkgsPrSubscription = InferSelectModel<
+    typeof schema.nixpkgsPrSubscriptions
+>;
+export type NewNixpkgsPrSubscription = InferInsertModel<
+    typeof schema.nixpkgsPrSubscriptions
+>;
 
 export const InsertRedditPostSchema = createInsertSchema(schema.redditPosts);
 export const SelectRedditPostSchema = createSelectSchema(schema.redditPosts);
 export const InsertStatusSchema = createInsertSchema(schema.statuses);
 export const SelectStatusSchema = createSelectSchema(schema.statuses);
+export const InsertNixpkgsPrSubscriptionSchema = createInsertSchema(
+    schema.nixpkgsPrSubscriptions
+);
+export const SelectNixpkgsPrSubscriptionSchema = createSelectSchema(
+    schema.nixpkgsPrSubscriptions
+);

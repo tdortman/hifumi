@@ -40,7 +40,7 @@ const client = new Client({
     partials: [Partials.Channel],
 });
 
-client.once("ready", async (c) => {
+client.once("clientReady", async (c) => {
     const time = strftime("%d/%m/%Y %H:%M:%S");
     const doneLoadingTime = Date.now();
 

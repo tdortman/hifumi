@@ -48,6 +48,7 @@ import type {
     UpdateEmbedArrParams,
     UpdateEmbedOptions,
 } from "./types.ts";
+import { startNixpkgsPollingLoop } from "../commands/nixpkgs.ts";
 
 export async function ensureNotBehindRemote() {
     const fetchRes = await $`git fetch origin`.quiet();
@@ -71,6 +72,7 @@ export async function initialise(client: Client) {
     await prefixHandler.init().catch(console.error);
     prefixHandler.loadingDone();
     avoidDbSleeping().catch(console.error);
+    startNixpkgsPollingLoop(client).catch(console.error);
 }
 
 /**

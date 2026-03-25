@@ -67,6 +67,31 @@ export const redditPosts = sqliteTable(
     ]
 );
 
+export const nixpkgsPrSubscriptions = sqliteTable(
+    "nixpkgs_pr_subscriptions",
+    {
+        id: integer("id", { mode: "number" }).primaryKey({
+            autoIncrement: true,
+        }),
+        userId: text("user_id", { length: 255 }).notNull(),
+        prNumber: integer("pr_number", { mode: "number" }).notNull(),
+        branch: text("branch", { length: 255 })
+            .notNull()
+            .default("nixos-unstable"),
+        channelId: text("channel_id", { length: 255 }),
+        mergeCommitSha: text("merge_commit_sha", { length: 255 }),
+        createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    },
+    (table) => [
+        index("nixpkgs_user_idx").on(table.userId),
+        unique("unique_user_pr_branch").on(
+            table.userId,
+            table.prNumber,
+            table.branch
+        ),
+    ]
+);
+
 export const statuses = sqliteTable(
     "statuses",
     {

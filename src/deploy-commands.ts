@@ -227,6 +227,82 @@ let commands = [
         )
         .setContexts(InteractionContextType.Guild)
         .setIntegrationTypes(ApplicationIntegrationType.GuildInstall),
+
+    new SlashCommandBuilder()
+        .setName("nixpkgs")
+        .setDescription("Track nixpkgs PRs and get notified when they land")
+        .addSubcommand((sub) =>
+            sub
+                .setName("add")
+                .setDescription("Subscribe to a nixpkgs PR")
+                .addIntegerOption((option) =>
+                    option
+                        .setName("pr")
+                        .setDescription("The PR number")
+                        .setRequired(true)
+                        .setMinValue(1)
+                )
+                .addStringOption((option) =>
+                    option
+                        .setName("branch")
+                        .setDescription(
+                            "The branch to track (default: nixos-unstable)"
+                        )
+                        .setRequired(false)
+                )
+        )
+        .addSubcommand((sub) =>
+            sub
+                .setName("remove")
+                .setDescription("Unsubscribe from a nixpkgs PR")
+                .addIntegerOption((option) =>
+                    option
+                        .setName("pr")
+                        .setDescription("The PR number")
+                        .setRequired(true)
+                        .setMinValue(1)
+                )
+                .addStringOption((option) =>
+                    option
+                        .setName("branch")
+                        .setDescription(
+                            "The branch to unsubscribe from (default: nixos-unstable)"
+                        )
+                        .setRequired(false)
+                )
+        )
+        .addSubcommand((sub) =>
+            sub
+                .setName("edit")
+                .setDescription("Change the branch for a PR subscription")
+                .addIntegerOption((option) =>
+                    option
+                        .setName("pr")
+                        .setDescription("The PR number")
+                        .setRequired(true)
+                        .setMinValue(1)
+                )
+                .addStringOption((option) =>
+                    option
+                        .setName("branch")
+                        .setDescription("The new branch to track")
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand((sub) =>
+            sub
+                .setName("list")
+                .setDescription("List your active nixpkgs PR subscriptions")
+        )
+        .setIntegrationTypes(
+            ApplicationIntegrationType.GuildInstall,
+            ApplicationIntegrationType.UserInstall
+        )
+        .setContexts(
+            InteractionContextType.Guild,
+            InteractionContextType.BotDM,
+            InteractionContextType.PrivateChannel
+        ),
 ].map((command) => command.toJSON());
 
 if (process.env.DEV_MODE === "true") {
