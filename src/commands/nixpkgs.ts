@@ -22,7 +22,7 @@ import type { NixpkgsPrSubscription } from "../db/types.ts";
 
 const GITHUB_API = "https://api.github.com";
 const NIXPKGS_REPO = "NixOS/nixpkgs";
-const POLL_INTERVAL_MS = 5 * 1000;
+const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 const GITHUB_HEADERS: HeadersInit = {
     Accept: "application/vnd.github+json",
