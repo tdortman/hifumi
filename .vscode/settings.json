@@ -1,5 +1,4 @@
 {
-    "typescript.tsdk": "node_modules/typescript/lib",
     "[typescript]": {
         "editor.defaultFormatter": "biomejs.biome"
     },
@@ -8,5 +7,6 @@
     },
     "yaml.schemas": {
         "https://json.schemastore.org/github-workflow.json": "${workspaceFolder}/.github/workflows/deploy.yml"
-    }
+    },
+    "js/ts.tsdk.path": "node_modules/typescript/lib"
 }
