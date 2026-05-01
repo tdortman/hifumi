@@ -92,6 +92,26 @@ export const nixpkgsPrSubscriptions = sqliteTable(
     ]
 );
 
+export const nixpkgsBranchSubscriptions = sqliteTable(
+    "nixpkgs_branch_subscriptions",
+    {
+        id: integer("id", { mode: "number" }).primaryKey({
+            autoIncrement: true,
+        }),
+        userId: text("user_id", { length: 255 }).notNull(),
+        branch: text("branch", { length: 255 })
+            .notNull()
+            .default("nixos-unstable"),
+        channelId: text("channel_id", { length: 255 }),
+        lastSeenSha: text("last_seen_sha", { length: 255 }).notNull(),
+        createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    },
+    (table) => [
+        index("nixpkgs_branch_user_idx").on(table.userId),
+        unique("unique_user_branch").on(table.userId, table.branch),
+    ]
+);
+
 export const statuses = sqliteTable(
     "statuses",
     {

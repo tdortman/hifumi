@@ -10,19 +10,27 @@ import {
 import { z } from "zod";
 import { EMBED_COLOUR, USER_AGENT } from "../config.ts";
 import {
+    addBranchSubscription,
     addPrSubscription,
+    getAllBranchSubscriptions,
     deletePrSubscriptionById,
     getAllActivePrSubscriptions,
+    getUserBranchSubscriptions,
     getUserPrSubscriptions,
+    removeBranchSubscription,
     removePrSubscription,
+    updateBranchSubscriptionSha,
     updatePrSubscriptionBranch,
     updatePrSubscriptionSha,
 } from "../db/index.ts";
-import type { NixpkgsPrSubscription } from "../db/types.ts";
+import type {
+    NixpkgsBranchSubscription,
+    NixpkgsPrSubscription,
+} from "../db/types.ts";
 
 const GITHUB_API = "https://api.github.com";
 const NIXPKGS_REPO = "NixOS/nixpkgs";
-const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 const GITHUB_HEADERS: HeadersInit = {
     Accept: "application/vnd.github+json",
@@ -42,6 +50,16 @@ const GitHubPRSchema = z.object({
 
 type GitHubPR = z.infer<typeof GitHubPRSchema>;
 
+const GitHubBranchSchema = z.object({
+    name: z.string(),
+    commit: z.object({
+        sha: z.string(),
+        url: z.url(),
+    }),
+});
+
+type GitHubBranch = z.infer<typeof GitHubBranchSchema>;
+
 async function fetchPR(prNumber: number): Promise<GitHubPR | null> {
     const res = await fetch(
         `${GITHUB_API}/repos/${NIXPKGS_REPO}/pulls/${prNumber}`,
@@ -54,6 +72,21 @@ async function fetchPR(prNumber: number): Promise<GitHubPR | null> {
 
     const json = await res.json().catch(() => null);
     const parsed = GitHubPRSchema.safeParse(json);
+    return parsed.success ? parsed.data : null;
+}
+
+async function fetchBranch(branch: string): Promise<GitHubBranch | null> {
+    const res = await fetch(
+        `${GITHUB_API}/repos/${NIXPKGS_REPO}/branches/${encodeURIComponent(branch)}`,
+        {
+            headers: GITHUB_HEADERS,
+        }
+    ).catch(() => null);
+
+    if (!res?.ok) return null;
+
+    const json = await res.json().catch(() => null);
+    const parsed = GitHubBranchSchema.safeParse(json);
     return parsed.success ? parsed.data : null;
 }
 
@@ -103,6 +136,26 @@ function prHyperlink(prNumber: number): string {
     return hyperlink(`#${prNumber}`, prUrl(prNumber));
 }
 
+function branchCompareUrl(oldSha: string, newSha: string) {
+    return `https://github.com/${NIXPKGS_REPO}/compare/${oldSha}...${newSha}`;
+}
+
+function branchUrl(branch: string) {
+    return `https://github.com/${NIXPKGS_REPO}/tree/${encodeURI(branch)}`;
+}
+
+function branchHyperlink(branch: string) {
+    return hyperlink(branch, branchUrl(branch));
+}
+
+function isUniqueConstraintError(e: unknown): boolean {
+    const error = e as Error;
+    return (
+        error.message.includes("UNIQUE") ||
+        (error.cause instanceof Error && error.cause.message.includes("UNIQUE"))
+    );
+}
+
 function toDiscordTimestamp(value: string | null): string {
     if (!value) return "unknown";
 
@@ -143,13 +196,9 @@ export async function nixpkgsAdd(interaction: ChatInputCommandInteraction) {
             mergeCommitSha: pr.merge_commit_sha,
         });
     } catch (e: unknown) {
-        const duplicatePr = ((e as Error).cause as Error).message.includes(
-            "UNIQUE"
-        );
-
-        if (duplicatePr) {
+        if (isUniqueConstraintError(e)) {
             return await interaction.editReply(
-                `You're already subscribed to PR ${prHyperlink(prNumber)} on branch \`${branch}\`.`
+                `You're already subscribed to PR ${prHyperlink(prNumber)} on branch ${branchHyperlink(branch)}.`
             );
         }
         return await interaction.editReply(
@@ -160,7 +209,9 @@ export async function nixpkgsAdd(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder()
         .setColor(EMBED_COLOUR)
         .setTitle("Nixpkgs PR Subscription Added")
-        .setDescription(`Tracking ${prHyperlink(prNumber)} → \`${branch}\``)
+        .setDescription(
+            `Tracking ${prHyperlink(prNumber)} → ${branchHyperlink(branch)}`
+        )
         .addFields(
             { name: "PR Title", value: pr.title, inline: false },
             {
@@ -168,7 +219,7 @@ export async function nixpkgsAdd(interaction: ChatInputCommandInteraction) {
                 value: pr.merged ? "Merged ✅" : `${pr.state}`,
                 inline: true,
             },
-            { name: "Branch", value: `\`${branch}\``, inline: true }
+            { name: "Branch", value: branchHyperlink(branch), inline: true }
         )
         .setTimestamp();
 
@@ -185,13 +236,13 @@ export async function nixpkgsRemove(interaction: ChatInputCommandInteraction) {
 
     if (result.rowsAffected === 0) {
         return await interaction.reply({
-            content: `No subscription found for PR ${prHyperlink(prNumber)} on branch \`${branch}\`.`,
+            content: `No subscription found for PR ${prHyperlink(prNumber)} on branch ${branchHyperlink(branch)}.`,
             flags: MessageFlags.Ephemeral,
         });
     }
 
     return await interaction.reply({
-        content: `Unsubscribed from PR ${prHyperlink(prNumber)} on branch \`${branch}\`.`,
+        content: `Unsubscribed from PR ${prHyperlink(prNumber)} on branch ${branchHyperlink(branch)}.`,
         flags: MessageFlags.Ephemeral,
     });
 }
@@ -233,43 +284,143 @@ export async function nixpkgsEdit(interaction: ChatInputCommandInteraction) {
 
 export async function nixpkgsList(interaction: ChatInputCommandInteraction) {
     const userId = interaction.user.id;
-    const subs = await getUserPrSubscriptions(userId);
+    const [prSubsResult, branchSubsResult] = await Promise.allSettled([
+        getUserPrSubscriptions(userId),
+        getUserBranchSubscriptions(userId),
+    ]);
+    const prSubs =
+        prSubsResult.status === "fulfilled" ? prSubsResult.value : [];
+    const branchSubs =
+        branchSubsResult.status === "fulfilled" ? branchSubsResult.value : [];
 
-    if (subs.length === 0) {
+    if (prSubs.length === 0 && branchSubs.length === 0) {
         return await interaction.reply({
-            content: "You have no active nixpkgs PR subscriptions.",
+            content: "You have no active nixpkgs subscriptions.",
             flags: MessageFlags.Ephemeral,
         });
     }
 
-    const uniquePrNumbers = [...new Set(subs.map((s) => s.prNumber))];
-    const prEntries = await Promise.all(
+    const uniquePrNumbers = [...new Set(prSubs.map((s) => s.prNumber))];
+    const prEntryResults = await Promise.allSettled(
         uniquePrNumbers.map(async (prNumber) => {
             const pr = await fetchPR(prNumber);
             return [prNumber, pr] as const;
         })
     );
+    const prEntries = prEntryResults
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
     const prByNumber = new Map<number, GitHubPR | null>(prEntries);
 
-    const lines = subs.map((s) => {
+    const prLines = prSubs.map((s) => {
         const pr = prByNumber.get(s.prNumber);
         const title = pr?.title ?? "Title unavailable";
         return [
             `• ${prHyperlink(s.prNumber)} - ${title}`,
-            `  Branch: \`${s.branch}\``,
+            `  Branch: ${branchHyperlink(s.branch)}`,
             `  Added: ${toDiscordTimestamp(s.createdAt)}`,
         ].join("\n");
     });
 
+    const branchLines = branchSubs.map((s) =>
+        [
+            `• ${branchHyperlink(s.branch)}`,
+            `  Last seen: \`${s.lastSeenSha}\``,
+            `  Added: ${toDiscordTimestamp(s.createdAt)}`,
+        ].join("\n")
+    );
+
+    const description = [
+        prLines.length > 0 ? `**PRs**\n${prLines.join("\n")}` : null,
+        branchLines.length > 0
+            ? `**Branches**\n${branchLines.join("\n")}`
+            : null,
+    ]
+        .filter(Boolean)
+        .join("\n\n");
+
     const embed = new EmbedBuilder()
         .setColor(EMBED_COLOUR)
-        .setTitle("Your Nixpkgs PR Subscriptions")
-        .setDescription(lines.join("\n"))
-        .setFooter({ text: `${subs.length} subscription(s)` })
+        .setTitle("Your Nixpkgs Subscriptions")
+        .setDescription(description)
+        .setFooter({
+            text: `${prSubs.length + branchSubs.length} subscription(s)`,
+        })
         .setTimestamp();
 
     return await interaction.reply({
         embeds: [embed],
+        flags: MessageFlags.Ephemeral,
+    });
+}
+
+export async function nixpkgsBranchAdd(
+    interaction: ChatInputCommandInteraction
+) {
+    const branch =
+        interaction.options.getString("branch", false) ?? "nixos-unstable";
+    const userId = interaction.user.id;
+    const channelId = interaction.channelId;
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const githubBranch = await fetchBranch(branch);
+    if (!githubBranch) {
+        return await interaction.editReply(
+            `Could not find branch ${branchHyperlink(branch)} on nixpkgs.`
+        );
+    }
+
+    try {
+        await addBranchSubscription({
+            userId,
+            branch,
+            channelId,
+            lastSeenSha: githubBranch.commit.sha,
+        });
+    } catch (e: unknown) {
+        if (isUniqueConstraintError(e)) {
+            return await interaction.editReply(
+                `You're already subscribed to branch ${branchHyperlink(branch)}.`
+            );
+        }
+        return await interaction.editReply(
+            "Failed to add branch subscription, please try again later."
+        );
+    }
+
+    const embed = new EmbedBuilder()
+        .setColor(EMBED_COLOUR)
+        .setTitle("Nixpkgs Branch Subscription Added")
+        .setDescription(`Tracking branch ${branchHyperlink(branch)}`)
+        .addFields({
+            name: "Current SHA",
+            value: `\`${githubBranch.commit.sha}\``,
+            inline: false,
+        })
+        .setTimestamp();
+
+    return await interaction.editReply({ embeds: [embed] });
+}
+
+export async function nixpkgsBranchRemove(
+    interaction: ChatInputCommandInteraction
+) {
+    const branch =
+        interaction.options.getString("branch", false) ?? "nixos-unstable";
+    const userId = interaction.user.id;
+
+    const result = await removeBranchSubscription(userId, branch);
+
+    if (result.rowsAffected === 0) {
+        return await interaction.reply({
+            content: `No subscription found for branch ${branchHyperlink(branch)}.`,
+            flags: MessageFlags.Ephemeral,
+        });
+    }
+
+    return await interaction.reply({
+        content: `Unsubscribed from branch ${branchHyperlink(branch)}.`,
         flags: MessageFlags.Ephemeral,
     });
 }
@@ -283,7 +434,7 @@ async function notifyUser(
         .setColor(EMBED_COLOUR)
         .setTitle("🎉 Nixpkgs PR Landed!")
         .setDescription(
-            `${prHyperlink(pr.number)} has landed on \`${sub.branch}\`!`
+            `${prHyperlink(pr.number)} has landed on ${branchHyperlink(sub.branch)}!`
         )
         .addFields({ name: "PR Title", value: pr.title, inline: false })
         .setTimestamp();
@@ -313,63 +464,136 @@ async function notifyUser(
     }
 }
 
+async function notifyBranchUpdate(
+    client: Client,
+    sub: NixpkgsBranchSubscription,
+    newSha: string
+) {
+    const compareUrl = branchCompareUrl(sub.lastSeenSha, newSha);
+    const embed = new EmbedBuilder()
+        .setColor(EMBED_COLOUR)
+        .setTitle("Nixpkgs Branch Updated")
+        .setDescription(`${branchHyperlink(sub.branch)} has a new revision.`)
+        .setURL(compareUrl)
+        .addFields(
+            {
+                name: "Previous",
+                value: `\`${sub.lastSeenSha}\``,
+                inline: false,
+            },
+            { name: "Current", value: `\`${newSha}\``, inline: false },
+            { name: "Diff", value: hyperlink("GitHub compare", compareUrl) }
+        )
+        .setTimestamp();
+
+    try {
+        const user = await client.users.fetch(sub.userId, { force: true });
+        const dm = await user.createDM(true);
+        await dm.send({ embeds: [embed] });
+    } catch (err) {
+        if (sub.channelId) {
+            try {
+                const channel = await client.channels.fetch(sub.channelId);
+                if (channel?.isTextBased() && "send" in channel) {
+                    await channel.send({
+                        content: userMention(sub.userId),
+                        embeds: [embed],
+                    });
+                }
+            } catch {
+                console.error(
+                    `Failed to notify user ${sub.userId} for branch ${sub.branch} ` +
+                        "(channel fallback also failed)"
+                );
+                console.error(err);
+            }
+        }
+    }
+}
+
+async function pollPrSubscriptions(client: Client) {
+    const subs = await getAllActivePrSubscriptions();
+
+    // Group subs by prNumber to minimize GitHub API calls
+    const byPr = new Map<number, NixpkgsPrSubscription[]>();
+    for (const sub of subs) {
+        const existing = byPr.get(sub.prNumber) ?? [];
+        existing.push(sub);
+        byPr.set(sub.prNumber, existing);
+    }
+
+    for (const [prNumber, prSubs] of byPr) {
+        const pr = await fetchPR(prNumber);
+        if (!pr) continue;
+
+        // Update merge_commit_sha if we don't have it yet but PR is now merged
+        if (pr.merge_commit_sha) {
+            for (const sub of prSubs) {
+                if (!sub.mergeCommitSha) {
+                    await updatePrSubscriptionSha(sub.id, pr.merge_commit_sha);
+                    sub.mergeCommitSha = pr.merge_commit_sha;
+                }
+            }
+        }
+
+        // Skip if PR hasn't been merged yet
+        if (!pr.merged || !pr.merge_commit_sha) continue;
+
+        // Group by branch to minimize compare calls
+        const byBranch = new Map<string, NixpkgsPrSubscription[]>();
+        for (const sub of prSubs) {
+            const existing = byBranch.get(sub.branch) ?? [];
+            existing.push(sub);
+            byBranch.set(sub.branch, existing);
+        }
+
+        for (const [branch, branchSubs] of byBranch) {
+            const onBranch = await isShaOnBranch(pr.merge_commit_sha, branch);
+            if (!onBranch) continue;
+
+            for (const sub of branchSubs) {
+                await notifyUser(client, sub, pr);
+                await deletePrSubscriptionById(sub.id);
+            }
+        }
+
+        // Small delay between PRs to be respectful to the API
+        await Bun.sleep(1000);
+    }
+}
+
+async function pollBranchSubscriptions(client: Client) {
+    const subs = await getAllBranchSubscriptions();
+
+    const byBranch = new Map<string, NixpkgsBranchSubscription[]>();
+    for (const sub of subs) {
+        const existing = byBranch.get(sub.branch) ?? [];
+        existing.push(sub);
+        byBranch.set(sub.branch, existing);
+    }
+
+    for (const [branch, branchSubs] of byBranch) {
+        const githubBranch = await fetchBranch(branch);
+        if (!githubBranch) continue;
+
+        const newSha = githubBranch.commit.sha;
+        const changedSubs = branchSubs.filter(
+            (sub) => sub.lastSeenSha !== newSha
+        );
+        for (const sub of changedSubs) {
+            await notifyBranchUpdate(client, sub, newSha);
+            await updateBranchSubscriptionSha(sub.id, newSha);
+        }
+
+        await Bun.sleep(1000);
+    }
+}
+
 export async function startNixpkgsPollingLoop(client: Client) {
     while (true) {
         try {
-            const subs = await getAllActivePrSubscriptions();
-
-            // Group subs by prNumber to minimize GitHub API calls
-            const byPr = new Map<number, NixpkgsPrSubscription[]>();
-            for (const sub of subs) {
-                const existing = byPr.get(sub.prNumber) ?? [];
-                existing.push(sub);
-                byPr.set(sub.prNumber, existing);
-            }
-
-            for (const [prNumber, prSubs] of byPr) {
-                const pr = await fetchPR(prNumber);
-                if (!pr) continue;
-
-                // Update merge_commit_sha if we don't have it yet but PR is now merged
-                if (pr.merge_commit_sha) {
-                    for (const sub of prSubs) {
-                        if (!sub.mergeCommitSha) {
-                            await updatePrSubscriptionSha(
-                                sub.id,
-                                pr.merge_commit_sha
-                            );
-                            sub.mergeCommitSha = pr.merge_commit_sha;
-                        }
-                    }
-                }
-
-                // Skip if PR hasn't been merged yet
-                if (!pr.merged || !pr.merge_commit_sha) continue;
-
-                // Group by branch to minimize compare calls
-                const byBranch = new Map<string, NixpkgsPrSubscription[]>();
-                for (const sub of prSubs) {
-                    const existing = byBranch.get(sub.branch) ?? [];
-                    existing.push(sub);
-                    byBranch.set(sub.branch, existing);
-                }
-
-                for (const [branch, branchSubs] of byBranch) {
-                    const onBranch = await isShaOnBranch(
-                        pr.merge_commit_sha,
-                        branch
-                    );
-                    if (!onBranch) continue;
-
-                    for (const sub of branchSubs) {
-                        await notifyUser(client, sub, pr);
-                        await deletePrSubscriptionById(sub.id);
-                    }
-                }
-
-                // Small delay between PRs to be respectful to the API
-                await Bun.sleep(1000);
-            }
+            await pollPrSubscriptions(client);
+            await pollBranchSubscriptions(client);
         } catch (e) {
             console.error("Error in nixpkgs polling loop:", e);
         }

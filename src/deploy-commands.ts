@@ -233,7 +233,7 @@ let commands = [
         .setDescription("Track nixpkgs PRs and get notified when they land")
         .addSubcommand((sub) =>
             sub
-                .setName("add")
+                .setName("pr-add")
                 .setDescription("Subscribe to a nixpkgs PR")
                 .addIntegerOption((option) =>
                     option
@@ -253,7 +253,7 @@ let commands = [
         )
         .addSubcommand((sub) =>
             sub
-                .setName("remove")
+                .setName("pr-remove")
                 .setDescription("Unsubscribe from a nixpkgs PR")
                 .addIntegerOption((option) =>
                     option
@@ -273,7 +273,7 @@ let commands = [
         )
         .addSubcommand((sub) =>
             sub
-                .setName("edit")
+                .setName("pr-edit")
                 .setDescription("Change the branch for a PR subscription")
                 .addIntegerOption((option) =>
                     option
@@ -292,7 +292,33 @@ let commands = [
         .addSubcommand((sub) =>
             sub
                 .setName("list")
-                .setDescription("List your active nixpkgs PR subscriptions")
+                .setDescription("List your active nixpkgs subscriptions")
+        )
+        .addSubcommand((sub) =>
+            sub
+                .setName("branch-add")
+                .setDescription("Subscribe to nixpkgs branch updates")
+                .addStringOption((option) =>
+                    option
+                        .setName("branch")
+                        .setDescription(
+                            "The branch to track (default: nixos-unstable)"
+                        )
+                        .setRequired(false)
+                )
+        )
+        .addSubcommand((sub) =>
+            sub
+                .setName("branch-remove")
+                .setDescription("Unsubscribe from nixpkgs branch updates")
+                .addStringOption((option) =>
+                    option
+                        .setName("branch")
+                        .setDescription(
+                            "The branch to unsubscribe from (default: nixos-unstable)"
+                        )
+                        .setRequired(false)
+                )
         )
         .setIntegrationTypes(
             ApplicationIntegrationType.GuildInstall,

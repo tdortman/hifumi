@@ -2,8 +2,14 @@ import { createClient } from "@libsql/client";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { nixpkgsPrSubscriptions, prefixes, redditPosts } from "./schema.ts";
+import {
+    nixpkgsBranchSubscriptions,
+    nixpkgsPrSubscriptions,
+    prefixes,
+    redditPosts,
+} from "./schema.ts";
 import type {
+    NewNixpkgsBranchSubscription,
     NewNixpkgsPrSubscription,
     NewRedditPost,
     RedditPost,
@@ -145,4 +151,37 @@ export async function updatePrSubscriptionSha(id: number, sha: string) {
         .update(nixpkgsPrSubscriptions)
         .set({ mergeCommitSha: sha })
         .where(eq(nixpkgsPrSubscriptions.id, id));
+}
+
+export async function addBranchSubscription(sub: NewNixpkgsBranchSubscription) {
+    return await db.insert(nixpkgsBranchSubscriptions).values(sub);
+}
+
+export async function removeBranchSubscription(userId: string, branch: string) {
+    return await db
+        .delete(nixpkgsBranchSubscriptions)
+        .where(
+            and(
+                eq(nixpkgsBranchSubscriptions.userId, userId),
+                eq(nixpkgsBranchSubscriptions.branch, branch)
+            )
+        );
+}
+
+export async function getUserBranchSubscriptions(userId: string) {
+    return await db
+        .select()
+        .from(nixpkgsBranchSubscriptions)
+        .where(eq(nixpkgsBranchSubscriptions.userId, userId));
+}
+
+export async function getAllBranchSubscriptions() {
+    return await db.select().from(nixpkgsBranchSubscriptions);
+}
+
+export async function updateBranchSubscriptionSha(id: number, sha: string) {
+    return await db
+        .update(nixpkgsBranchSubscriptions)
+        .set({ lastSeenSha: sha })
+        .where(eq(nixpkgsBranchSubscriptions.id, id));
 }

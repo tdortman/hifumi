@@ -19,6 +19,12 @@ export type NixpkgsPrSubscription = InferSelectModel<
 export type NewNixpkgsPrSubscription = InferInsertModel<
     typeof schema.nixpkgsPrSubscriptions
 >;
+export type NixpkgsBranchSubscription = InferSelectModel<
+    typeof schema.nixpkgsBranchSubscriptions
+>;
+export type NewNixpkgsBranchSubscription = InferInsertModel<
+    typeof schema.nixpkgsBranchSubscriptions
+>;
 
 export const InsertRedditPostSchema = createInsertSchema(schema.redditPosts);
 export const SelectRedditPostSchema = createSelectSchema(schema.redditPosts);
@@ -29,4 +35,10 @@ export const InsertNixpkgsPrSubscriptionSchema = createInsertSchema(
 );
 export const SelectNixpkgsPrSubscriptionSchema = createSelectSchema(
     schema.nixpkgsPrSubscriptions
+);
+export const InsertNixpkgsBranchSubscriptionSchema = createInsertSchema(
+    schema.nixpkgsBranchSubscriptions
+);
+export const SelectNixpkgsBranchSubscriptionSchema = createSelectSchema(
+    schema.nixpkgsBranchSubscriptions
 );

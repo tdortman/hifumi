@@ -1,0 +1,495 @@
+{
+    "version": "6",
+    "dialect": "sqlite",
+    "id": "fbf320b3-f0d4-4920-a53d-bd7c0fedccad",
+    "prevId": "b45d2c10-84c5-4f49-89eb-21b8740e6039",
+    "tables": {
+        "ai_command_aliases": {
+            "name": "ai_command_aliases",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "command": {
+                    "name": "command",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "alias": {
+                    "name": "alias",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "ai_reactions": {
+            "name": "ai_reactions",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "command": {
+                    "name": "command",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "reaction": {
+                    "name": "reaction",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "error_logs": {
+            "name": "error_logs",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "server": {
+                    "name": "server",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "channel": {
+                    "name": "channel",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "user": {
+                    "name": "user",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "command": {
+                    "name": "command",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "stack": {
+                    "name": "stack",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "timestamp": {
+                    "name": "timestamp",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false,
+                    "default": "CURRENT_TIMESTAMP"
+                },
+                "log": {
+                    "name": "log",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "error": {
+                    "name": "error",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "help_messages": {
+            "name": "help_messages",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "cmd": {
+                    "name": "cmd",
+                    "type": "text(100)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "desc": {
+                    "name": "desc",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "leet": {
+            "name": "leet",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "source": {
+                    "name": "source",
+                    "type": "text(1)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "translated": {
+                    "name": "translated",
+                    "type": "text(10)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "nixpkgs_branch_subscriptions": {
+            "name": "nixpkgs_branch_subscriptions",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "user_id": {
+                    "name": "user_id",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "branch": {
+                    "name": "branch",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'nixos-unstable'"
+                },
+                "channel_id": {
+                    "name": "channel_id",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "last_seen_sha": {
+                    "name": "last_seen_sha",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false,
+                    "default": "CURRENT_TIMESTAMP"
+                }
+            },
+            "indexes": {
+                "nixpkgs_branch_user_idx": {
+                    "name": "nixpkgs_branch_user_idx",
+                    "columns": ["user_id"],
+                    "isUnique": false
+                },
+                "unique_user_branch": {
+                    "name": "unique_user_branch",
+                    "columns": ["user_id", "branch"],
+                    "isUnique": true
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "nixpkgs_pr_subscriptions": {
+            "name": "nixpkgs_pr_subscriptions",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "user_id": {
+                    "name": "user_id",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "pr_number": {
+                    "name": "pr_number",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "branch": {
+                    "name": "branch",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'nixos-unstable'"
+                },
+                "channel_id": {
+                    "name": "channel_id",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "merge_commit_sha": {
+                    "name": "merge_commit_sha",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false,
+                    "default": "CURRENT_TIMESTAMP"
+                }
+            },
+            "indexes": {
+                "nixpkgs_user_idx": {
+                    "name": "nixpkgs_user_idx",
+                    "columns": ["user_id"],
+                    "isUnique": false
+                },
+                "unique_user_pr_branch": {
+                    "name": "unique_user_pr_branch",
+                    "columns": ["user_id", "pr_number", "branch"],
+                    "isUnique": true
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "prefixes": {
+            "name": "prefixes",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "server_id": {
+                    "name": "server_id",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "prefix": {
+                    "name": "prefix",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "prefixes_server_id_unique": {
+                    "name": "prefixes_server_id_unique",
+                    "columns": ["server_id"],
+                    "isUnique": true
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "reddit_posts": {
+            "name": "reddit_posts",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "subreddit": {
+                    "name": "subreddit",
+                    "type": "text(50)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "title": {
+                    "name": "title",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "url": {
+                    "name": "url",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "over_18": {
+                    "name": "over_18",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "permalink": {
+                    "name": "permalink",
+                    "type": "text(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "subreddit_idx": {
+                    "name": "subreddit_idx",
+                    "columns": ["subreddit"],
+                    "isUnique": false
+                },
+                "url_idx": {
+                    "name": "url_idx",
+                    "columns": ["url"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "statuses": {
+            "name": "statuses",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "integer",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "type": {
+                    "name": "type",
+                    "type": "text(20)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "text(128)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "id": {
+                    "name": "id",
+                    "columns": ["id"],
+                    "isUnique": false
+                },
+                "unique_type_status": {
+                    "name": "unique_type_status",
+                    "columns": ["type", "status"],
+                    "isUnique": true
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        }
+    },
+    "views": {},
+    "enums": {},
+    "_meta": {
+        "schemas": {},
+        "tables": {},
+        "columns": {}
+    },
+    "internal": {
+        "indexes": {}
+    }
+}

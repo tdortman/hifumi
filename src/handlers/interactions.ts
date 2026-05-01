@@ -20,6 +20,8 @@ import {
 } from "../commands/miscellaneous.ts";
 import {
     nixpkgsAdd,
+    nixpkgsBranchAdd,
+    nixpkgsBranchRemove,
     nixpkgsEdit,
     nixpkgsList,
     nixpkgsRemove,
@@ -125,10 +127,12 @@ const commands = new Map<ChatInputCommandName, ChatInputCommandFn>([
     [".leet", leet],
     [".beautiful", beautiful],
     [".prefix", updatePrefix],
-    ["nixpkgs::add", nixpkgsAdd],
-    ["nixpkgs::remove", nixpkgsRemove],
-    ["nixpkgs::edit", nixpkgsEdit],
     ["nixpkgs::list", nixpkgsList],
+    ["nixpkgs::pr-add", nixpkgsAdd],
+    ["nixpkgs::pr-remove", nixpkgsRemove],
+    ["nixpkgs::pr-edit", nixpkgsEdit],
+    ["nixpkgs::branch-add", nixpkgsBranchAdd],
+    ["nixpkgs::branch-remove", nixpkgsBranchRemove],
 ]);
 
 const devCommands = new Map<ChatInputCommandName, ChatInputCommandFn>();
