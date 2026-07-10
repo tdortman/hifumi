@@ -1,24 +1,65 @@
-# Deploying her yourself
+# Running Hifumi
 
-The main thing you will have to add is a `.env` file in the root directory that looks as follows:
+## Prerequisites
+
+- Node.js 26 (uses Node's native TypeScript type stripping).
+- pnpm 11.
+- [ImageMagick](https://imagemagick.org/index.php) for image manipulation.
+- [gifsicle](https://www.lcdf.org/gifsicle/) for GIF resizing.
+
+Verify the tool versions before continuing:
 
 ```shell
-BOT_TOKEN="YOUR DISCORD BOT TOKEN"
-BOT_ID="DISCORD BOT ID"
-EXCHANGE_API_KEY="API KEY FOR https://www.exchangerate-api.com/"
-IMGUR_CLIENT_ID="IMGUR APP CLIENT ID"
-IMGUR_CLIENT_SECRET="IMGUR APP CLIENT SECRET"
-REDDIT_CLIENT_ID="REDDIT APP CLIENT ID"
-REDDIT_CLIENT_SECRET="REDDIT APP CLIENT SECRET"
-REDDIT_REFRESH_TOKEN="REDDIT APP REFRESH TOKEN"
-TURSO_DATABASE_URL="TURSO DATABASE URL",
-TURSO_AUTH_TOKEN="TURSO AUTH TOKEN",
-WOLFRAM_ALPHA_APP_ID="WOLFRAM ALPHA APP ID"
-DEV_MODE="true" or "false"
+# Unix
+convert -version
+# Windows
+magick -version
+
+gifsicle --version
 ```
 
-You can use pm2 or any other process manager to manage reloading during runtime.
+## Setup
 
-Just make sure to install it first, in the case of pm2 that would be `pnpm install -g pm2`.
+Copy the environment template, then fill in the values for your bot and service accounts:
 
-Alternatively you can also just use the provided docker files to run her in an isolated container and manage things that way of course. [Imagemagick](https://imagemagick.org/index.php) is required for the image manipulation commands to work. You'll also need to have [gifsicle](https://www.lcdf.org/gifsicle/) installed to be able to resize gifs for some commands
+```shell
+cp .env.example .env
+```
+
+Install the project dependencies:
+
+```shell
+pnpm install
+```
+
+## Run and develop
+
+Run the application directly with Node:
+
+```shell
+pnpm run run
+```
+
+Start the development watcher:
+
+```shell
+pnpm run dev
+```
+
+Run the formatter/linter, type check, and tests:
+
+```shell
+pnpm run build
+pnpm test
+```
+
+## PM2
+
+PM2 is installed as a project dependency. Use the package scripts; a global PM2
+installation is not required:
+
+```shell
+pnpm start
+pnpm run restart
+pnpm run stop
+```
