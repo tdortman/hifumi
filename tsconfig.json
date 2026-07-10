@@ -1,12 +1,11 @@
 {
     "compilerOptions": {
-        "module": "ESNext",
-        "lib": ["ESNext"],
+        "module": "NodeNext",
         "target": "ESNext",
         "moduleDetection": "force",
         "strict": true,
         "esModuleInterop": true,
-        "moduleResolution": "Bundler",
+        "moduleResolution": "NodeNext",
         "allowImportingTsExtensions": true,
         "noEmit": true,
         "noImplicitThis": true,
@@ -21,7 +20,8 @@
         "verbatimModuleSyntax": true,
         "incremental": true,
         "noUncheckedIndexedAccess": true,
-        "types": ["bun-types"]
+        "erasableSyntaxOnly": true,
+        "types": ["node"]
     },
     "include": ["**/*.ts"],
     "exclude": ["node_modules", "dist"]

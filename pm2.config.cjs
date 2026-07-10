@@ -6,6 +6,7 @@ module.exports = {
     env: {
         NODE_ENV: "production",
     },
-    interpreter: "bun",
+    interpreter: "node",
+    node_args: "--env-file-if-exists=.env",
     merge_logs: true,
 };

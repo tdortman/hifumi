@@ -9,7 +9,6 @@
       supportedSystems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
       ];
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -23,8 +22,11 @@
         {
           default = pkgs.mkShell {
             buildInputs = with pkgs; [
-              bun
+              nodejs_26
+              (pnpm_11.override { nodejs-slim = nodejs_26; })
               stdenv.cc.cc.lib
+              imagemagick
+              gifsicle
               pm2
             ];
 

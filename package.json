@@ -2,56 +2,62 @@
     "name": "hifumi-js",
     "version": "1.0.0",
     "type": "module",
+    "packageManager": "pnpm@11.9.0",
+    "engines": {
+        "node": ">=26.0.0 <27.0.0",
+        "pnpm": ">=11.0.0 <12.0.0"
+    },
     "dependencies": {
-        "@libsql/client": "^0.17.3",
+        "@libsql/client": "^0.17.4",
         "bufferutil": "^4.1.0",
-        "discord.js": "^14.26.3",
+        "discord.js": "^14.26.4",
         "drizzle-orm": "^0.45.2",
         "drizzle-zod": "^0.8.3",
-        "fuse.js": "^7.3.0",
+        "fuse.js": "^7.4.2",
         "mathjs": "^15.2.0",
+        "pm2": "^7.0.3",
         "qrcode": "^1.5.4",
-        "sharp": "^0.34.5",
+        "sharp": "^0.35.3",
         "snoowrap": "^1.23.0",
         "strftime": "^0.10.3",
         "table": "^6.9.0",
-        "zod": "^4.4.1",
+        "zod": "^4.4.3",
         "zod-validation-error": "5.0.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.4.13",
+        "@biomejs/biome": "2.5.3",
         "@total-typescript/ts-reset": "^0.6.1",
+        "@types/node": "^26.1.1",
         "@types/qrcode": "^1.5.6",
         "@types/strftime": "^0.9.8",
-        "bun-types": "^1.3.13",
-        "concurrently": "^9.2.1",
+        "concurrently": "^10.0.3",
         "drizzle-kit": "^0.31.10",
         "husky": "^9.1.7",
-        "lint-staged": "^16.4.0",
-        "typescript": "^6.0.3"
+        "lint-staged": "^17.0.8",
+        "typescript": "^7.0.2"
     },
     "scripts": {
         "start": "pm2 start ./pm2.config.cjs",
         "stop": "pm2 delete ./pm2.config.cjs",
         "restart": "pm2 reload ./pm2.config.cjs",
+        "run": "node --env-file-if-exists=.env ./src/app.ts",
+        "dev": "node --env-file-if-exists=.env --watch ./src/app.ts",
         "fmt:check": "biome format",
         "fmt:write": "biome format --write",
-        "test": "bun run --bun concurrently 'bun:test:*'",
+        "build": "tsc",
+        "test": "concurrently \"pnpm run test:lint\" \"pnpm run test:build\" \"pnpm run test:unit\"",
         "test:lint": "biome lint --error-on-warnings",
-        "test:build": "tsc",
+        "test:build": "pnpm run build",
+        "test:unit": "node --test test/*.test.ts",
         "prepare": "husky || true",
-        "deploy": "bun ./src/deploy-commands.ts",
+        "deploy": "node --env-file-if-exists=.env ./src/deploy-commands.ts",
         "db:gen": "drizzle-kit generate --config ./src/db/drizzle.config.ts",
         "db:up": "drizzle-kit up --config ./src/db/drizzle.config.ts",
         "db:push": "drizzle-kit push --config ./src/db/drizzle.config.ts",
-        "deploy-dev": "bun ./src/deploy-commands.ts --guild 655484563077988385",
-        "clear-test-commands": "bun ./src/deploy-commands.ts --guild 655484563077988385 --clear"
+        "deploy-dev": "node --env-file-if-exists=.env ./src/deploy-commands.ts --guild 655484563077988385",
+        "clear-test-commands": "node --env-file-if-exists=.env ./src/deploy-commands.ts --guild 655484563077988385 --clear"
     },
     "lint-staged": {
         "*.{js,ts,json,css,md,yml}": "biome format --write"
-    },
-    "trustedDependencies": [
-        "@biomejs/biome",
-        "sharp"
-    ]
+    }
 }
