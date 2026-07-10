@@ -1,5 +1,0 @@
-services:
-    hifumi:
-        build:
-            context: ./
-            dockerfile: Dockerfile
