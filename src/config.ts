@@ -1,3 +1,5 @@
+import { accessSync, constants, statSync } from "node:fs";
+import path from "node:path";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -43,6 +45,33 @@ const envVariables = z.object({
     GITHUB_TOKEN:         z.string().min(1, "You must provide a GitHub Personal Access Token"),
     DEV_MODE:             z.enum(["true", "false"]),
 });
+function executableOnPath(command: string): string | null {
+    const commandHasPath =
+        path.isAbsolute(command) ||
+        command.includes("/") ||
+        (process.platform === "win32" && command.includes("\\"));
+    const directories = commandHasPath
+        ? [""]
+        : (process.env["PATH"] ?? "").split(path.delimiter);
+    const extensions =
+        process.platform === "win32" && path.extname(command) === ""
+            ? (process.env["PATHEXT"] ?? ".COM;.EXE;.BAT;.CMD").split(";")
+            : [""];
+
+    for (const directory of directories) {
+        for (const extension of extensions) {
+            const candidate = path.join(directory, `${command}${extension}`);
+            try {
+                accessSync(candidate, constants.X_OK);
+                if (statSync(candidate).isFile()) return candidate;
+            } catch {
+                // Continue searching PATH entries.
+            }
+        }
+    }
+
+    return null;
+}
 
 if (!process.argv.some((arg) => arg.includes("deploy-commands"))) {
     // This is a hacky way to check if we're imported by deploy-commands.ts
@@ -60,7 +89,7 @@ if (!process.argv.some((arg) => arg.includes("deploy-commands"))) {
         process.exit(1);
     });
 
-    if (Bun.which("gifsicle") === null) {
+    if (executableOnPath("gifsicle") === null) {
         console.error(
             "gifsicle is not installed, please install it and try again"
         );
@@ -69,14 +98,13 @@ if (!process.argv.some((arg) => arg.includes("deploy-commands"))) {
 
     const magickCommand = process.platform === "win32" ? "magick" : "convert";
 
-    if (Bun.which(magickCommand) === null) {
+    if (executableOnPath(magickCommand) === null) {
         console.error(
             "ImageMagick is not installed, please install it and try again"
         );
         process.exit(1);
     }
 }
-
 declare global {
     // biome-ignore lint/style/noNamespace: This has been validated above so it's fine
     namespace NodeJS {

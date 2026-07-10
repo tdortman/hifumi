@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import type { TextChannel } from "discord.js";
 import { eq } from "drizzle-orm";
 import { db } from "../db/index.ts";
@@ -9,8 +10,8 @@ import {
 import { isDev, randomIntFromRange } from "../helpers/utils.ts";
 
 export async function startCatFactLoop(channel: TextChannel) {
-    const sleep = async () =>
-        await Bun.sleep(randomIntFromRange(54000000, 86400000)); // 15h-24h
+    const sleepForCatFact = async () =>
+        await sleep(randomIntFromRange(54000000, 86400000)); // 15h-24h
 
     while (true) {
         const response = await fetch("https://catfact.ninja/fact").catch(
@@ -19,7 +20,7 @@ export async function startCatFactLoop(channel: TextChannel) {
 
         if (!response) {
             await channel.send("Error fetching cat fact");
-            await sleep();
+            await sleepForCatFact();
             continue;
         }
 
@@ -29,12 +30,12 @@ export async function startCatFactLoop(channel: TextChannel) {
 
         if (!(json && CatFactResponseSchema.safeParse(json).success)) {
             await channel.send("Error parsing cat fact response");
-            await sleep();
+            await sleepForCatFact();
             continue;
         }
 
         await channel.send(json.fact);
-        await sleep();
+        await sleepForCatFact();
     }
 }
 
@@ -51,6 +52,6 @@ export async function avoidDbSleeping() {
         });
 
         await db.delete(errorLogs).where(eq(errorLogs.channel, "N/A"));
-        await Bun.sleep(sixDaysinSeconds * 1000);
+        await sleep(sixDaysinSeconds * 1000);
     }
 }

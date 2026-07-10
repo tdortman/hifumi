@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import { ActivityType, type Client } from "discord.js";
 import { db } from "../db/index.ts";
 import { statuses } from "../db/schema.ts";
@@ -23,7 +24,7 @@ export async function startStatusLoop(client: Client) {
     while (true) {
         const status = setRandomStatus(client);
         if (!status) break;
-        await Bun.sleep(randomIntFromRange(300000, 900000)); // 5m-15m
+        await sleep(randomIntFromRange(300000, 900000)); // 5m-15m
     }
 }
 

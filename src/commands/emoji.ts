@@ -1,6 +1,5 @@
 import { copyFile, readFile } from "node:fs/promises";
 import path from "node:path";
-import { $ } from "bun";
 import {
     DiscordAPIError,
     type GuildEmoji,
@@ -23,6 +22,7 @@ import {
     resize,
     splitMessage,
 } from "../helpers/utils.ts";
+import { runCommand } from "../helpers/process.ts";
 
 export const emojiRegex = new RegExp(/<a?:\w+:\d+>/gi);
 const msgLinkRegex = new RegExp(
@@ -137,14 +137,19 @@ async function convertEmojis(
             continue;
         }
 
-        const magickPrefix =
-            process.platform === "win32" ? "magick convert" : "convert";
+        const magickCommand =
+            process.platform === "win32" ? "magick" : "convert";
+        const magickPrefix = process.platform === "win32" ? ["convert"] : [];
 
-        const compressOutput = await $`
-                ${magickPrefix} ${frameTwoPath} -quality 90 ${frameTwoPath}
-            `.catch(console.error);
+        const compressOutput = await runCommand(magickCommand, [
+            ...magickPrefix,
+            frameTwoPath,
+            "-quality",
+            "90",
+            frameTwoPath,
+        ]).catch(console.error);
 
-        if (!compressOutput || compressOutput.exitCode !== 0) {
+        if (compressOutput === undefined) {
             await message.channel.send(
                 `Could not compress \`${name}\`, skipping...`
             );
@@ -153,11 +158,16 @@ async function convertEmojis(
 
         const gifPath = path.join(temp.path, `${name}-${parsed.id}.gif`);
 
-        const convertOutput = await $`
-                ${magickPrefix} ${frameOnePath} ${frameTwoPath} -delay 100 ${gifPath}
-            `.catch(console.error);
+        const convertOutput = await runCommand(magickCommand, [
+            ...magickPrefix,
+            frameOnePath,
+            frameTwoPath,
+            "-delay",
+            "100",
+            gifPath,
+        ]).catch(console.error);
 
-        if (!convertOutput || convertOutput.exitCode !== 0) {
+        if (convertOutput === undefined) {
             await message.channel.send(
                 `Could not convert \`${name}\`, skipping...`
             );
@@ -172,7 +182,7 @@ async function convertEmojis(
                 animated: true,
             });
 
-            if (!output || ("exitCode" in output && output.exitCode !== 0)) {
+            if (output === undefined) {
                 await message.channel.send(
                     `Something went wrong while resizing \`${name}\`, skipping...`
                 );
@@ -412,7 +422,7 @@ export async function addEmoji(message: NarrowedMessage, prefix: string) {
                 animated: imgType === "gif",
             });
 
-            if (!output || ("exitCode" in output && output.exitCode !== 0)) {
+            if (output === undefined) {
                 return message.channel.send(
                     "Something went wrong while resizing the image, please try again!"
                 );

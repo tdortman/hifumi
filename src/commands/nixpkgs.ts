@@ -1,4 +1,4 @@
-import type { HeadersInit } from "bun";
+import { setTimeout as sleep } from "node:timers/promises";
 import {
     type ChatInputCommandInteraction,
     type Client,
@@ -558,7 +558,7 @@ async function pollPrSubscriptions(client: Client) {
         }
 
         // Small delay between PRs to be respectful to the API
-        await Bun.sleep(1000);
+        await sleep(1000);
     }
 }
 
@@ -585,7 +585,7 @@ async function pollBranchSubscriptions(client: Client) {
             await updateBranchSubscriptionSha(sub.id, newSha);
         }
 
-        await Bun.sleep(1000);
+        await sleep(1000);
     }
 }
 
@@ -598,6 +598,6 @@ export async function startNixpkgsPollingLoop(client: Client) {
             console.error("Error in nixpkgs polling loop:", e);
         }
 
-        await Bun.sleep(POLL_INTERVAL_MS);
+        await sleep(POLL_INTERVAL_MS);
     }
 }

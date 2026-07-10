@@ -1,5 +1,3 @@
-import "@total-typescript/ts-reset";
-
 import assert from "node:assert/strict";
 import { existsSync, rmSync } from "node:fs";
 import {
@@ -87,7 +85,7 @@ if (process.platform === "win32") {
     stopSignals.push("SIGKILL");
 }
 
-// Graceful Shutdown on Ctrl + C / Docker stop
+// Graceful Shutdown on Ctrl + C / SIGTERM
 for (const signal of stopSignals) {
     process.on(signal, async () => {
         await client.destroy();

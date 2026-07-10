@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
+import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 import {
     ActionRowBuilder,
@@ -45,7 +46,9 @@ import {
     type UrbanResponse,
     UrbanResponseSchema,
 } from "../helpers/types.ts";
-import {
+import * as tools from "../helpers/utils.ts";
+
+const {
     getUserObjectPingId,
     hasPermission,
     isBotOwner,
@@ -56,7 +59,7 @@ import {
     sendOrReply,
     setEmbedArr,
     writeUpdateFile,
-} from "../helpers/utils.ts";
+} = tools;
 
 const { WOLFRAM_ALPHA_APP_ID, EXCHANGE_API_KEY } = process.env;
 
@@ -84,7 +87,7 @@ math.import(
 
 export async function test(message: NarrowedMessage) {
     if (!isBotOwner(message.author)) return;
-    await Bun.sleep(1);
+    await sleep(1);
 }
 
 export async function patUser(interaction: ChatInputCommandInteraction) {
@@ -244,7 +247,7 @@ export async function reactToAi(message: NarrowedMessage, reactCmd: string) {
                 "{0}",
                 message.member?.displayName ?? message.author.username
             );
-            await Bun.sleep(1000);
+            await sleep(1000);
             return await message.channel.send(msg);
         }
     }
@@ -380,7 +383,7 @@ export async function cmdConsole(
 export async function reloadBot(message: NarrowedMessage) {
     if (!isBotOwner(message.author)) return;
     await writeUpdateFile();
-    exec("bun run restart");
+    execFile("pnpm", ["run", "restart"]);
     await message.channel.send("Reload successful!");
     process.exit(0);
 }
@@ -428,7 +431,6 @@ export async function asyncEval(
     command: string,
     _client: Client
 ): Promise<string> {
-    const tools = await import("../helpers/utils.js");
     const code = `(async () => { return (${command}) })()`;
     return await eval(code);
 }
@@ -821,6 +823,6 @@ export async function bye(message: NarrowedMessage) {
     // Closes the MongoDB connection and stops the running daemon via pm2
     await message.channel.send("Bai baaaaaaaai!!");
     await message.client.destroy();
-    exec("bun run stop");
+    execFile("pnpm", ["run", "stop"]);
     process.exit(0);
 }

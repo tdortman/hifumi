@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { statSync } from "node:fs";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { createWriteStream, existsSync, statSync } from "node:fs";
+import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path, { join } from "node:path";
-import { $ } from "bun";
+import { pipeline } from "node:stream/promises";
 import {
     type BaseMessageOptions,
     type Channel,
@@ -48,17 +48,23 @@ import type {
     UpdateEmbedArrParams,
     UpdateEmbedOptions,
 } from "./types.ts";
+import { runCommand } from "./process.ts";
 import { startNixpkgsPollingLoop } from "../commands/nixpkgs.ts";
 
 export async function ensureNotBehindRemote() {
-    const fetchRes = await $`git fetch origin`.quiet();
+    if (!existsSync(".git")) return;
+    const fetchOutput = await runCommand("git", ["fetch", "origin"], {
+        captureOutput: true,
+    }).catch(() => undefined);
 
-    if (fetchRes.exitCode !== 0) {
+    if (fetchOutput === undefined) {
         console.error("Failed to fetch from remote");
         process.exit(1);
     }
 
-    const output = await $`git status`.text();
+    const output = await runCommand("git", ["status"], {
+        captureOutput: true,
+    });
 
     if (output.includes("Your branch is behind")) {
         console.error("There are changes in the repo, pull them first!");
@@ -193,7 +199,7 @@ export function splitMessage(
 }
 
 export async function writeUpdateFile() {
-    await Bun.write(`/tmp/${BOT_NAME}_update.txt`, Date.now().toString());
+    await writeFile(`/tmp/${BOT_NAME}_update.txt`, Date.now().toString());
 }
 
 function getEmbedIndex(arr: EmbedData[], target: EmbedData): number {
@@ -215,10 +221,6 @@ export async function clientHasPermissions(message: Message): Promise<boolean> {
             .permissionsIn(message.channel.id)
             .has(PermissionsBitField.Flags.ViewChannel)
     );
-}
-
-export function insideDocker(): boolean {
-    return process.env["DOCKER"] === "true";
 }
 
 export function isBotOwner(user: User): boolean {
@@ -357,9 +359,15 @@ export async function resize(options: ResizeOptions) {
     assert(width > 0, "Width must be greater than 0");
 
     if (animated) {
-        return await $`
-            gifsicle --resize-width ${width} ${fileLocation} -o ${saveLocation} --colors 256
-        `.catch(console.error);
+        return await runCommand("gifsicle", [
+            "--resize-width",
+            String(width),
+            fileLocation,
+            "-o",
+            saveLocation,
+            "--colors",
+            "256",
+        ]).catch(console.error);
     }
     return await sharp(fileLocation)
         .resize(width)
@@ -548,14 +556,7 @@ export async function downloadURL(url: string, saveLocation: string) {
     if (!response.body) return "Failed to extract contents from response";
 
     try {
-        const writer = Bun.file(absSaveLocation).writer();
-
-        for await (const chunk of response.body) {
-            writer.write(chunk as Uint8Array);
-        }
-
-        await writer.flush();
-        await writer.end();
+        await pipeline(response.body, createWriteStream(absSaveLocation));
     } catch (err) {
         console.error(err);
         return "Failed to write to file";
